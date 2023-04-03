@@ -21,6 +21,9 @@
         "all": true,
         "readText": true,
         "writeText": true
+      },
+      "fs": {
+        "writeFile": true
       }
     },
     "bundle": {
@@ -32,7 +35,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "dev.chriswindsor.copycamel",
       "targets": "all"
     },
     "security": {
