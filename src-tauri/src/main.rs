@@ -25,7 +25,7 @@ struct LocalDBHistory(Mutex<Connection>);
 lazy_static! {
     static ref CLIPBOARD_HISTORY: ClipboardHistory = ClipboardHistory(Mutex::new(vec![]));
     static ref LOCAL_DB_CONNECTION: LocalDBHistory = LocalDBHistory(Mutex::new(
-        sqlite::open(":memory:").expect("Unable to connect to local DB")
+        sqlite::open("./copy-camel.db").expect("Unable to connect to local DB")
     ));
 }
 
@@ -96,7 +96,7 @@ fn main() {
         .execute(query)
         .unwrap();
 
-    tauri::Builder::default()
+    let mut app = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
         .plugin(tauri_plugin_positioner::init())
         .system_tray(SystemTray::new().with_menu(system_tray_menu))
@@ -143,6 +143,11 @@ fn main() {
             }
             _ => {}
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("Error while building application");
+
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+    app.run(|_app_handle, _event| {});
 }
