@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
-use sycamore::rt::Event;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -15,49 +14,40 @@ extern "C" {
 }
 
 #[derive(Serialize, Deserialize)]
-struct GreetArgs<'a> {
-    content: &'a str,
-}
+struct NoArgs {}
 
 #[component]
 pub fn App<G: Html>(cx: Scope) -> View<G> {
-    let name = create_signal(cx, String::new());
-    let greet_msg = create_signal(cx, String::new());
+    let history_list = create_signal(cx, vec!["".to_string()]);
 
-    let greet = move |e: Event| {
-        e.prevent_default();
+    on_mount(cx, move || {
         spawn_local_scoped(cx, async move {
-            let new_msg = invoke(
-                "greet",
-                to_value(&GreetArgs {
-                    content: &name.get(),
-                })
-                .unwrap(),
-            )
-            .await;
-
-            log(&new_msg.as_string().unwrap());
-
-            greet_msg.set(new_msg.as_string().unwrap());
+            let history_msg = invoke("retrieve_history", to_value(&NoArgs {}).unwrap()).await;
+            let history_msg = serde_wasm_bindgen::from_value::<Vec<String>>(history_msg).unwrap();
+            history_list.set(history_msg);
         })
-    };
+    });
 
     view! { cx,
         main(class="container") {
-            div(class="row") {
-                "Hey there! Im the copy 🐪"
+            "Hey there! Im the copy 🐪"
+            div(class="container") {
+                Indexed(
+                    iterable=history_list,
+                    view=|cx, x| view! { cx,
+                        ClipboardEntry(content=x)
+                    }
+                )
             }
-            form(class="row",on:submit=greet) {
-                input(id="greet-input",bind:value=name,placeholder="Enter some content...")
-                button(type="submit") {
-                    "Greet"
-                }
-            }
-            p {
-                b {
-                    (greet_msg.get())
-                }
-            }
+        }
+    }
+}
+
+#[component(inline_props)]
+fn ClipboardEntry<'a, G: Html>(cx: Scope<'a>, content: String) -> View<G> {
+    view! {cx,
+        div(class="clipboard-entry") {
+            (content)
         }
     }
 }

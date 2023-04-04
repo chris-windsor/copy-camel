@@ -30,14 +30,9 @@ lazy_static! {
 }
 
 #[tauri::command]
-fn greet(content: &str) -> String {
-    let mut ctx = ClipboardContext::new().unwrap();
-
-    ctx.set_contents(content.to_owned()).unwrap();
-
-    println!("{:#?}", CLIPBOARD_HISTORY.retrieve());
-
-    format!("Hey! I copied '{}' to your clipboard", content)
+fn retrieve_history() -> Vec<String> {
+    let history: Vec<String> = CLIPBOARD_HISTORY.retrieve();
+    history
 }
 
 fn init_polling() {
@@ -97,7 +92,7 @@ fn main() {
         .unwrap();
 
     let mut app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![retrieve_history])
         .plugin(tauri_plugin_positioner::init())
         .system_tray(SystemTray::new().with_menu(system_tray_menu))
         .on_system_tray_event(|app, event| {
