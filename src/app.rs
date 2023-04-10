@@ -16,38 +16,95 @@ extern "C" {
 #[derive(Serialize, Deserialize)]
 struct NoArgs {}
 
+#[derive(Debug, Default, Clone)]
+pub struct AppState {
+    pub entries: RcSignal<Vec<RcSignal<String>>>,
+}
+
+impl AppState {
+    fn add_entry(&self, content: String) {
+        self.entries.modify().push(create_rc_signal(content))
+    }
+}
+
 #[component]
 pub fn App<G: Html>(cx: Scope) -> View<G> {
-    let history_list = create_signal(cx, vec!["".to_string()]);
-
-    on_mount(cx, move || {
-        spawn_local_scoped(cx, async move {
-            let history_msg = invoke("retrieve_history", to_value(&NoArgs {}).unwrap()).await;
-            let history_msg = serde_wasm_bindgen::from_value::<Vec<String>>(history_msg).unwrap();
-            history_list.set(history_msg);
-        })
-    });
+    let app_state = AppState {
+        entries: Default::default(),
+    };
+    let _app_state = provide_context(cx, app_state);
 
     view! { cx,
         main(class="container") {
             "Hey there! Im the copy 🐪"
             div(class="container") {
-                Indexed(
-                    iterable=history_list,
-                    view=|cx, x| view! { cx,
-                        ClipboardEntry(content=x)
-                    }
-                )
+                EntryList {}
             }
         }
     }
 }
 
+#[derive(Serialize, Deserialize)]
+struct SetContentsArgs {
+    new_contents: String,
+}
+
 #[component(inline_props)]
-fn ClipboardEntry<'a, G: Html>(cx: Scope<'a>, content: String) -> View<G> {
-    view! {cx,
-        div(class="clipboard-entry") {
-            (content)
+fn EntryItem<G: Html>(cx: Scope, content: RcSignal<String>) -> View<G> {
+    let content_handle = create_ref(cx, content);
+
+    let content = || content_handle.get();
+
+    let click_handler = move |_| {
+        spawn_local_scoped(cx, async move {
+            invoke(
+                "set_contents",
+                to_value(&SetContentsArgs {
+                    new_contents: content().to_string(),
+                })
+                .unwrap(),
+            )
+            .await;
+        })
+    };
+
+    view! { cx,
+        li {
+            div(class="view") {
+                label(on:click=click_handler) {
+                    (content())
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn EntryList<G: Html>(cx: Scope) -> View<G> {
+    let app_state = use_context::<AppState>(cx);
+
+    on_mount(cx, move || {
+        spawn_local_scoped(cx, async move {
+            let history_msg = invoke("retrieve_history", to_value(&NoArgs {}).unwrap()).await;
+            let history_msg = serde_wasm_bindgen::from_value::<Vec<String>>(history_msg).unwrap();
+            for msg in history_msg {
+                app_state.add_entry(msg);
+            }
+        })
+    });
+
+    let filtered_entries = create_memo(cx, || {
+        app_state.entries.get().iter().cloned().collect::<Vec<_>>()
+    });
+
+    view! { cx,
+        ul(class="entry-list") {
+            Indexed(
+                iterable=filtered_entries,
+                view=|cx, content| view! { cx,
+                    EntryItem(content=content)
+                },
+            )
         }
     }
 }

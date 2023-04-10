@@ -35,6 +35,14 @@ fn retrieve_history() -> Vec<String> {
     history
 }
 
+#[tauri::command]
+fn set_contents(new_contents: String) -> Result<(), ()> {
+    let mut clipboard_ctx: ClipboardContext = ClipboardContext::new().unwrap();
+    println!("lololol");
+    clipboard_ctx.set_contents(new_contents);
+    Ok(())
+}
+
 fn init_polling() {
     std::thread::spawn(move || {
         let mut clipboard_ctx: ClipboardContext = ClipboardContext::new().unwrap();
@@ -92,7 +100,7 @@ fn main() {
         .unwrap();
 
     let mut app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![retrieve_history])
+        .invoke_handler(tauri::generate_handler![retrieve_history, set_contents])
         .plugin(tauri_plugin_positioner::init())
         .system_tray(SystemTray::new().with_menu(system_tray_menu))
         .on_system_tray_event(|app, event| {
