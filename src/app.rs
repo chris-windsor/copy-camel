@@ -69,12 +69,8 @@ fn EntryItem<G: Html>(cx: Scope, content: RcSignal<String>) -> View<G> {
     };
 
     view! { cx,
-        li {
-            div(class="view") {
-                label(on:click=click_handler) {
-                    (content())
-                }
-            }
+        div(class="entry-item", on:click=click_handler) {
+            (content())
         }
     }
 }
@@ -98,7 +94,7 @@ fn EntryList<G: Html>(cx: Scope) -> View<G> {
     });
 
     view! { cx,
-        ul(class="entry-list") {
+        div(class="entry-list") {
             Indexed(
                 iterable=filtered_entries,
                 view=|cx, content| view! { cx,
