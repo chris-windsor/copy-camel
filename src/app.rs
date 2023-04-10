@@ -45,8 +45,8 @@ pub fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct SetContentsArgs {
-    new_contents: String,
+struct SetContentsArgs<'a> {
+    content: &'a str,
 }
 
 #[component(inline_props)]
@@ -60,7 +60,7 @@ fn EntryItem<G: Html>(cx: Scope, content: RcSignal<String>) -> View<G> {
             invoke(
                 "set_contents",
                 to_value(&SetContentsArgs {
-                    new_contents: content().to_string(),
+                    content: &content_handle.get(),
                 })
                 .unwrap(),
             )

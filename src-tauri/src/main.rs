@@ -36,11 +36,9 @@ fn retrieve_history() -> Vec<String> {
 }
 
 #[tauri::command]
-fn set_contents(new_contents: String) -> Result<(), ()> {
+fn set_contents(content: &str) {
     let mut clipboard_ctx: ClipboardContext = ClipboardContext::new().unwrap();
-    println!("lololol");
-    clipboard_ctx.set_contents(new_contents);
-    Ok(())
+    clipboard_ctx.set_contents(content.to_string());
 }
 
 fn init_polling() {
